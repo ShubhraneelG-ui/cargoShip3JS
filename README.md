@@ -24,33 +24,13 @@ You need a local web server to run this project (due to CORS restrictions with l
 
 ### Quick Start
 
-#### Option 1: Using Python (if installed)
-
-```bash
-# Python 3
-python -m http.server 8000
-
-# Python 2
-python -m SimpleHTTPServer 8000
-```
-
-#### Option 2: Using Node.js
-
-```bash
-# Install http-server globally
-npm install -g http-server
-
-# Run server
-http-server -p 8000
-```
-
-#### Option 3: Using VS Code Live Server
+#### Option 1: Using VS Code Live Server
 
 1. Install the "Live Server" extension in VS Code
 2. Right-click on `index.html`
 3. Select "Open with Live Server"
 
-#### Option 4: Using npx (Node.js)
+#### Option 2: Using npx (Node.js)
 
 ```bash
 npx serve
@@ -59,6 +39,7 @@ npx serve
 ### Access the Website
 
 Open your browser and navigate to:
+
 ```
 http://localhost:8000
 ```
@@ -66,7 +47,9 @@ http://localhost:8000
 ## 🎛️ Interactive Controls
 
 ### Camera Controls (Press **C**)
+
 Toggle between scroll animation mode and manual camera control:
+
 - **Scroll Mode** (default): Camera follows predefined scroll-based animations
 - **Manual Mode**: Use OrbitControls to freely explore the scene
   - Left click + drag: Rotate camera
@@ -74,18 +57,22 @@ Toggle between scroll animation mode and manual camera control:
   - Scroll wheel: Zoom in/out
 
 ### Ocean Settings Panel (Press **O**)
+
 Real-time control over ocean appearance and behavior with organized sections:
 
 **Particle Properties:**
+
 - Particle Size (0.1 - 1.0): Adjust individual particle size
-- Particle Spacing (0.2 - 1.5): Control density of particles ⚠️ *Rebuilds ocean*
+- Particle Spacing (0.2 - 1.5): Control density of particles ⚠️ _Rebuilds ocean_
 - Particle Opacity (0.1 - 1.0): Change transparency
 
 **Ocean Dimensions:**
-- Ocean Width (50 - 400): Adjust horizontal extent ⚠️ *Rebuilds ocean*
-- Ocean Depth (50 - 400): Adjust vertical extent ⚠️ *Rebuilds ocean*
+
+- Ocean Width (50 - 400): Adjust horizontal extent ⚠️ _Rebuilds ocean_
+- Ocean Depth (50 - 400): Adjust vertical extent ⚠️ _Rebuilds ocean_
 
 **Wave Parameters:**
+
 - Wave Speed (0.1 - 2.0): Animation speed
 - Wave Amplitude (0.1 - 1.0): Height of waves
 - Wave Frequency (0.1 - 2.0): Density of wave patterns
@@ -96,6 +83,7 @@ Real-time control over ocean appearance and behavior with organized sections:
 Master control that amplifies all wave movements for vigorous/stormy seas
 
 **Ship Behavior:**
+
 - Ship Tilt (0.0 - 0.15): How much the ship rocks with waves
 
 **Reset Button:** Restore all parameters to default values
@@ -109,7 +97,6 @@ ship3js/
 ├── index.html          # Main HTML structure with scroll sections
 ├── script.js          # Three.js scene and scroll animations
 ├── style.css          # Modern styling and responsive design
-├── .cursorrules       # Development guidelines and patterns
 ├── README.md          # This file
 └── assets/
     └── big_cargo_ships_with__1031095925_generate.glb  # 3D ship model
@@ -124,10 +111,10 @@ Edit the `SCROLL_SECTIONS` array in `script.js`:
 ```javascript
 const SCROLL_SECTIONS = [
   {
-    progress: 0,                          // Scroll position (0 to 1)
-    camera: { x: 8, y: 3, z: 12 },       // Camera position
-    target: { x: 0, y: 1, z: 0 },        // Where camera looks
-    shipRotation: { x: 0, y: Math.PI * 0.2, z: 0 }  // Ship rotation
+    progress: 0, // Scroll position (0 to 1)
+    camera: { x: 8, y: 3, z: 12 }, // Camera position
+    target: { x: 0, y: 1, z: 0 }, // Where camera looks
+    shipRotation: { x: 0, y: Math.PI * 0.2, z: 0 }, // Ship rotation
   },
   // Add more sections...
 ];
@@ -139,7 +126,8 @@ In `index.html`, add a new section:
 
 ```html
 <section class="content-section section-N" data-section="N">
-  <div class="content-left">  <!-- or content-right -->
+  <div class="content-left">
+    <!-- or content-right -->
     <h2>Your Title</h2>
     <p>Your content...</p>
   </div>
@@ -167,19 +155,19 @@ The ocean uses a particle system with animated sine waves. Adjust these paramete
 
 ```javascript
 // In setupOcean() function
-const particleSpacing = 0.5;    // Distance between particles (smaller = more dense)
+const particleSpacing = 0.5; // Distance between particles (smaller = more dense)
 const oceanMaterial = new THREE.PointsMaterial({
-  color: 0xffffff,              // Particle color (white)
-  size: 0.3,                    // Particle size
-  opacity: 0.6                  // Transparency (0-1)
+  color: 0xffffff, // Particle color (white)
+  size: 0.3, // Particle size
+  opacity: 0.6, // Transparency (0-1)
 });
 
 // In animateOcean() function
-const waveSpeed = 0.5;          // Animation speed
-const waveAmplitude = 0.3;      // Wave height
-const waveFrequency = 0.5;      // Wave density
-const noiseAmplitude = 0.15;    // Randomness amount
-const noiseFrequency = 1.5;     // Noise detail level
+const waveSpeed = 0.5; // Animation speed
+const waveAmplitude = 0.3; // Wave height
+const waveFrequency = 0.5; // Wave density
+const noiseAmplitude = 0.15; // Randomness amount
+const noiseFrequency = 1.5; // Noise detail level
 ```
 
 **Performance Note:** Lower `particleSpacing` creates more particles but impacts performance. Recommended values: 0.3-0.8
@@ -190,14 +178,14 @@ Control how the ship floats on the waves in the `updateCameraPosition()` functio
 
 ```javascript
 // Ship tilt intensity
-const tiltAmplitude = 0.03;  // How much the ship rocks (increase for more dramatic)
+const tiltAmplitude = 0.03; // How much the ship rocks (increase for more dramatic)
 
 // Wave calculation for ship
 const oceanWaveHeight = calculateOceanWaveHeight(
   shipX,
   shipZ,
   currentTime,
-  false  // Set to true to include noise (more chaotic motion)
+  false // Set to true to include noise (more chaotic motion)
 );
 
 // Tilt calculation (simulates wave slopes)
@@ -206,6 +194,7 @@ const tiltZ = Math.cos(shipZ * 0.5 + time * 0.5) * tiltAmplitude;
 ```
 
 **Adjustment Tips:**
+
 - Increase `tiltAmplitude` (try 0.05-0.08) for a ship in stormy seas
 - Enable noise (`true`) for more chaotic, turbulent floating
 - Decrease frequency multipliers (0.5) for slower, gentler rocking
@@ -289,16 +278,17 @@ The ship floats realistically on the ocean waves using a shared wave calculation
 
 ```javascript
 // Shared function calculates wave height at any position
-calculateOceanWaveHeight(x, z, time, includeNoise)
+calculateOceanWaveHeight(x, z, time, includeNoise);
 
 // Ocean particles use full calculation with noise
-oceanWaveHeight = calculateOceanWaveHeight(x, z, time, true)
+oceanWaveHeight = calculateOceanWaveHeight(x, z, time, true);
 
 // Ship uses smooth calculation without noise
-shipWaveHeight = calculateOceanWaveHeight(shipX, shipZ, time, false)
+shipWaveHeight = calculateOceanWaveHeight(shipX, shipZ, time, false);
 ```
 
 **Why disable noise for the ship?**
+
 - Ocean particles need randomness for realistic turbulence
 - Ship needs smooth, predictable motion for visual stability
 - Result: Ship floats naturally without jittery movement
@@ -325,16 +315,6 @@ shipWaveHeight = calculateOceanWaveHeight(shipX, shipZ, time, false)
 - Ensure scroll container is properly positioned
 - Verify content has enough contrast against background
 
-## 📝 Development Tips
-
-See `.cursorrules` file for comprehensive development guidelines including:
-
-- Code style and structure
-- Three.js patterns
-- Scroll animation techniques
-- Performance optimization strategies
-- Common issues and solutions
-
 ## 🎨 Design Philosophy
 
 This project demonstrates:
@@ -358,6 +338,7 @@ Free to use for learning and demonstration purposes.
 ## 🚀 Future Enhancements
 
 Potential additions:
+
 - Interactive hotspots on the ship
 - Animated ocean waves with shaders
 - Particle effects (fog, smoke)
@@ -369,4 +350,3 @@ Potential additions:
 ---
 
 **Happy Exploring! 🌊**
-
