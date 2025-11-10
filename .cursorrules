@@ -1,0 +1,750 @@
+# Cursor Rules for 3D Cargo Ship Scroll Animation Website
+
+## Project Overview
+
+This is a Three.js-based scroll-driven storytelling website featuring a 3D cargo ship model with cinematic camera animations, parallax effects, and content sections that appear on scroll.
+
+## Technology Stack
+
+- **3D Library**: Three.js (latest version via CDN)
+- **Language**: Vanilla JavaScript (ES6+)
+- **3D Models**: GLTF/GLB format
+- **Styling**: Plain CSS with modern animations
+- **Animation**: GSAP (GreenSock Animation Platform) for smooth scroll animations
+- **Dependencies**: Loaded via CDN (Three.js, GLTFLoader, GSAP)
+
+### Critical: CDN Version Consistency
+
+**ALWAYS use the latest stable version for Three.js dependencies:**
+
+```html
+<!-- Use module imports for Three.js r150+ -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+```
+
+**Why**: Modern Three.js uses ES modules for better tree-shaking and cleaner imports.
+
+## Code Style and Structure
+
+### JavaScript Patterns
+
+- Use ES6+ features (const, let, arrow functions, template literals, destructuring)
+- Prefer functional programming patterns over classes
+- Use descriptive variable names with context (e.g., `shipModel`, `scrollProgress`, `cameraTargetPosition`)
+- Declare constants in UPPERCASE with underscores (e.g., `MODEL_PATH`, `SCROLL_SECTIONS`, `ANIMATION_DURATION`)
+- Use `let` for variables that will be reassigned (camera, scene, renderer, shipModel)
+- Use `const` for configuration arrays and objects that won't be reassigned
+
+### Three.js Specific Patterns
+
+#### Scene Setup
+
+- Always initialize in this order: Scene → Renderer → Camera → Lights → Models → Animation Loop
+- Set pixel ratio for sharp rendering: `renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))`
+- Enable tone mapping for better colors: `renderer.toneMapping = THREE.ACESFilmicToneMapping`
+- Use fog for atmospheric depth: `scene.fog = new THREE.Fog(color, near, far)`
+- Add environment lighting with HDR or basic ambient + directional lights
+
+#### Model Loading
+
+- Use GLTFLoader with ES module imports
+- Display loading progress with percentage
+- Center and scale model appropriately for viewport
+- Traverse loaded models to enable shadows and optimize materials
+- Position model at origin for easier camera animations
+- Calculate bounding box to auto-scale model to viewport
+
+#### Camera Animations Based on Scroll
+
+- Use `PerspectiveCamera` with FOV 45-75 for dramatic perspective
+- Create camera position waypoints for each scroll section
+- Use GSAP or lerp for smooth camera transitions
+- Animate camera position (x, y, z) and lookAt target independently
+- Update camera animations in `requestAnimationFrame` loop
+- Calculate scroll progress: `window.scrollY / (document.body.scrollHeight - window.innerHeight)`
+
+#### Lighting Setup for Outdoor/Ocean Scene
+
+- Use `DirectionalLight` as main sun light (warm color, high intensity)
+- Add `HemisphereLight` for ambient sky/ground lighting
+- Optional: Add `PointLight` near ship for accent lighting
+- Enable shadows on directional light with large shadow camera
+- Use realistic light colors: warm sun (0xffeaa7), cool sky (0x87ceeb)
+
+#### Performance Optimization
+
+- Limit pixel ratio to 2 for high-DPI displays: `Math.min(window.devicePixelRatio, 2)`
+- Use `renderer.shadowMap.type = THREE.PCFSoftShadowMap` for quality/performance balance
+- Implement frustum culling (enabled by default in Three.js)
+- Use LOD (Level of Detail) for complex models if needed
+- Debounce resize events for better performance
+
+### Scroll Animation System
+
+#### Scroll Progress Tracking
+
+- Calculate normalized scroll progress (0 to 1)
+- Create sections array defining camera positions, rotations, and content
+- Map scroll progress to section transitions
+- Use easing functions for smooth animations (easeInOut, easeOut)
+
+#### Section Configuration
+
+```javascript
+const SCROLL_SECTIONS = [
+  {
+    progress: 0,
+    camera: { x: 5, y: 2, z: 8 },
+    target: { x: 0, y: 0, z: 0 },
+    shipRotation: { x: 0, y: 0, z: 0 },
+    content: 'section-1'
+  },
+  {
+    progress: 0.25,
+    camera: { x: -3, y: 3, z: 6 },
+    target: { x: 0, y: 1, z: 0 },
+    shipRotation: { x: 0, y: Math.PI * 0.5, z: 0 },
+    content: 'section-2'
+  },
+  // ... more sections
+];
+```
+
+#### Animation Interpolation
+
+- Use linear interpolation (lerp) for smooth camera movement
+- Apply easing functions for more natural motion
+- Interpolate camera position, rotation, and lookAt target
+- Sync ship rotation/position with scroll progress
+- Update all animations every frame in the render loop
+
+```javascript
+function lerp(start, end, t) {
+  return start + (end - start) * t;
+}
+
+function easeInOutQuad(t) {
+  return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+}
+```
+
+### File Organization
+
+```
+├── index.html           # Main HTML structure with sections
+├── script.js           # Three.js scene, scroll animations
+├── style.css           # Styling, layout, content positioning
+└── assets/
+    └── big_cargo_ships_with__1031095925_generate.glb
+```
+
+### HTML Structure
+
+#### Canvas and Scroll Container
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cargo Ship Experience</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Fixed Three.js canvas -->
+  <canvas id="webgl"></canvas>
+
+  <!-- Loading screen -->
+  <div id="loading-screen">
+    <div class="loader">
+      <div class="spinner"></div>
+      <div class="progress-text">Loading... <span id="progress">0</span>%</div>
+    </div>
+  </div>
+
+  <!-- Scroll sections with content -->
+  <div id="scroll-container">
+    <section class="content-section section-1" data-section="0">
+      <div class="content-left">
+        <h1>Welcome Aboard</h1>
+        <p>Lorem ipsum dolor sit amet...</p>
+      </div>
+    </section>
+
+    <section class="content-section section-2" data-section="1">
+      <div class="content-right">
+        <h2>Global Shipping</h2>
+        <p>Consectetur adipiscing elit...</p>
+      </div>
+    </section>
+
+    <!-- More sections... -->
+  </div>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
+```
+
+#### Content Section Pattern
+
+- Each section has `data-section` attribute for tracking
+- Content alternates between left and right
+- Use `.content-left` and `.content-right` classes
+- Make sections 100vh tall for full-screen sections
+- Use flexbox for centering and positioning
+
+### CSS and Styling
+
+#### Layout Principles
+
+- Fixed position canvas as background
+- Relative scroll container overlaying canvas
+- Absolute positioned content sections
+- Use flexbox for content alignment
+- Transparent backgrounds for content to show 3D scene
+
+#### Responsive Design
+
+- Mobile-first approach with breakpoints at 768px, 1024px
+- Adjust section heights for mobile (80vh instead of 100vh)
+- Stack content vertically on small screens
+- Reduce font sizes proportionally
+- Hide decorative elements on mobile if needed
+
+#### Animation and Transitions
+
+- Fade in content sections as they enter viewport
+- Use Intersection Observer API for scroll triggers
+- Animate content with CSS transitions and transforms
+- Add parallax effect to text elements
+- Use backdrop-filter for glass-morphism effects
+
+```css
+.content-section {
+  opacity: 0;
+  transform: translateY(50px);
+  transition: opacity 1s ease, transform 1s ease;
+}
+
+.content-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+```
+
+#### Typography and Colors
+
+- Use modern sans-serif fonts (Inter, Poppins, or system fonts)
+- Large, bold headings (48px-72px) for impact
+- Readable body text (16px-20px) with good line-height
+- High contrast for readability over 3D background
+- Ocean/nautical color palette: blues, teals, dark navies, white
+
+### JavaScript Architecture
+
+#### Initialization Flow
+
+1. Import Three.js modules
+2. Initialize loading screen
+3. Setup scene, camera, renderer
+4. Add lights
+5. Load ship model with progress tracking
+6. Remove loading screen when complete
+7. Start animation loop
+8. Setup scroll event listeners
+9. Initialize Intersection Observer for content
+
+#### Scene Management
+
+```javascript
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+let scene, camera, renderer, shipModel;
+let scrollProgress = 0;
+
+function init() {
+  // Create scene
+  scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x87ceeb); // Sky blue
+  scene.fog = new THREE.Fog(0x87ceeb, 10, 50);
+
+  // Create camera
+  camera = new THREE.PerspectiveCamera(
+    75,
+    window.innerWidth / window.innerHeight,
+    0.1,
+    1000
+  );
+  camera.position.set(5, 2, 8);
+
+  // Create renderer
+  const canvas = document.getElementById('webgl');
+  renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+  setupLights();
+  loadShipModel();
+  setupScrollListener();
+  setupIntersectionObserver();
+  animate();
+}
+```
+
+#### Scroll Event Handling
+
+```javascript
+function setupScrollListener() {
+  window.addEventListener('scroll', () => {
+    // Calculate scroll progress
+    const maxScroll = document.body.scrollHeight - window.innerHeight;
+    scrollProgress = window.scrollY / maxScroll;
+  });
+}
+
+function updateCameraPosition() {
+  // Find current section based on scroll progress
+  let currentSection = 0;
+  let nextSection = 1;
+
+  for (let i = 0; i < SCROLL_SECTIONS.length - 1; i++) {
+    if (scrollProgress >= SCROLL_SECTIONS[i].progress &&
+        scrollProgress < SCROLL_SECTIONS[i + 1].progress) {
+      currentSection = i;
+      nextSection = i + 1;
+      break;
+    }
+  }
+
+  // Calculate interpolation factor
+  const sectionStart = SCROLL_SECTIONS[currentSection].progress;
+  const sectionEnd = SCROLL_SECTIONS[nextSection].progress;
+  const sectionProgress = (scrollProgress - sectionStart) / (sectionEnd - sectionStart);
+  const t = easeInOutQuad(sectionProgress);
+
+  // Interpolate camera position
+  camera.position.x = lerp(
+    SCROLL_SECTIONS[currentSection].camera.x,
+    SCROLL_SECTIONS[nextSection].camera.x,
+    t
+  );
+  camera.position.y = lerp(
+    SCROLL_SECTIONS[currentSection].camera.y,
+    SCROLL_SECTIONS[nextSection].camera.y,
+    t
+  );
+  camera.position.z = lerp(
+    SCROLL_SECTIONS[currentSection].camera.z,
+    SCROLL_SECTIONS[nextSection].camera.z,
+    t
+  );
+
+  // Interpolate look-at target
+  const targetX = lerp(
+    SCROLL_SECTIONS[currentSection].target.x,
+    SCROLL_SECTIONS[nextSection].target.x,
+    t
+  );
+  const targetY = lerp(
+    SCROLL_SECTIONS[currentSection].target.y,
+    SCROLL_SECTIONS[nextSection].target.y,
+    t
+  );
+  const targetZ = lerp(
+    SCROLL_SECTIONS[currentSection].target.z,
+    SCROLL_SECTIONS[nextSection].target.z,
+    t
+  );
+  camera.lookAt(targetX, targetY, targetZ);
+
+  // Rotate ship
+  if (shipModel) {
+    shipModel.rotation.y = lerp(
+      SCROLL_SECTIONS[currentSection].shipRotation.y,
+      SCROLL_SECTIONS[nextSection].shipRotation.y,
+      t
+    );
+  }
+}
+```
+
+#### Content Visibility with Intersection Observer
+
+```javascript
+function setupIntersectionObserver() {
+  const options = {
+    threshold: 0.3,
+    rootMargin: '0px 0px -100px 0px'
+  };
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      } else {
+        entry.target.classList.remove('visible');
+      }
+    });
+  }, options);
+
+  document.querySelectorAll('.content-section').forEach(section => {
+    observer.observe(section);
+  });
+}
+```
+
+### Performance Optimization
+
+#### Rendering
+
+- Use `requestAnimationFrame` for smooth 60fps animations
+- Implement resize handler with debouncing
+- Update camera aspect ratio on resize
+- Only render when scroll position changes (optional for better performance)
+- Use `renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))` to cap at 2x
+
+#### Scroll Performance
+
+- Use `passive: true` on scroll listeners
+- Throttle scroll calculations if needed
+- Use CSS `will-change` property for animated elements
+- Implement virtual scrolling for very long pages
+
+#### Model Optimization
+
+- Compress GLTF/GLB models before use
+- Use Draco compression for geometry
+- Optimize texture sizes (1024x1024 or 2048x2048 max)
+- Use texture compression formats (KTX2, Basis)
+- Remove unnecessary model details
+
+### Lighting Patterns
+
+#### Ocean Scene Lighting
+
+```javascript
+function setupLights() {
+  // Hemisphere light for ambient
+  const hemiLight = new THREE.HemisphereLight(0x87ceeb, 0x0c3c78, 0.6);
+  scene.add(hemiLight);
+
+  // Main directional light (sun)
+  const sunLight = new THREE.DirectionalLight(0xffeaa7, 1.5);
+  sunLight.position.set(10, 20, 10);
+  sunLight.castShadow = true;
+  sunLight.shadow.camera.left = -20;
+  sunLight.shadow.camera.right = 20;
+  sunLight.shadow.camera.top = 20;
+  sunLight.shadow.camera.bottom = -20;
+  sunLight.shadow.camera.near = 0.1;
+  sunLight.shadow.camera.far = 50;
+  sunLight.shadow.mapSize.set(2048, 2048);
+  scene.add(sunLight);
+
+  // Fill light (optional)
+  const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+  fillLight.position.set(-5, 10, -5);
+  scene.add(fillLight);
+}
+```
+
+### Camera Animation Techniques
+
+#### Zoom In/Out
+
+```javascript
+// Zoom in by moving camera closer
+camera: { x: 2, y: 1, z: 3 } // Close up
+
+// Zoom out for wide shot
+camera: { x: 10, y: 5, z: 15 } // Wide shot
+```
+
+#### Orbital Movement
+
+```javascript
+// Calculate circular camera path
+const angle = scrollProgress * Math.PI * 2;
+const radius = 8;
+camera.position.x = Math.cos(angle) * radius;
+camera.position.z = Math.sin(angle) * radius;
+camera.lookAt(0, 0, 0);
+```
+
+#### Dramatic Angles
+
+```javascript
+// Low angle looking up
+camera: { x: 3, y: -2, z: 5 }
+
+// High angle looking down
+camera: { x: 0, y: 10, z: 5 }
+
+// Side profile
+camera: { x: 10, y: 2, z: 0 }
+```
+
+### Common Patterns
+
+#### Loading Progress
+
+```javascript
+const loadingManager = new THREE.LoadingManager();
+const progressText = document.getElementById('progress');
+
+loadingManager.onProgress = (url, loaded, total) => {
+  const percent = Math.floor((loaded / total) * 100);
+  progressText.textContent = percent;
+};
+
+loadingManager.onLoad = () => {
+  document.getElementById('loading-screen').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('loading-screen').style.display = 'none';
+  }, 500);
+};
+
+const gltfLoader = new GLTFLoader(loadingManager);
+```
+
+#### Resize Handling
+
+```javascript
+window.addEventListener('resize', () => {
+  // Update camera aspect ratio
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+
+  // Update renderer size
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+});
+```
+
+#### Model Auto-Scaling
+
+```javascript
+function scaleModelToViewport(model) {
+  const box = new THREE.Box3().setFromObject(model);
+  const size = box.getSize(new THREE.Vector3());
+  const maxDim = Math.max(size.x, size.y, size.z);
+  const scale = 5 / maxDim; // Adjust 5 to desired size
+  model.scale.set(scale, scale, scale);
+
+  // Center model
+  const center = box.getCenter(new THREE.Vector3());
+  model.position.sub(center);
+}
+```
+
+### Error Handling
+
+- Implement error callbacks in GLTF loader
+- Display user-friendly error messages
+- Provide fallback content if model fails to load
+- Check for WebGL support before initialization
+- Handle missing texture/material errors gracefully
+
+### Accessibility
+
+- Add ARIA labels to interactive elements
+- Provide keyboard navigation alternatives
+- Include skip-to-content link
+- Ensure color contrast for text readability
+- Add reduced motion support for accessibility preferences
+
+```javascript
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+if (prefersReducedMotion) {
+  // Disable or simplify animations
+}
+```
+
+### Naming Conventions
+
+- Three.js objects: camelCase (camera, renderer, scene, shipModel)
+- Constants: UPPERCASE_WITH_UNDERSCORES (MODEL_PATH, SCROLL_SECTIONS)
+- DOM elements: camelCase with descriptive names (loadingScreen, progressText)
+- Functions: camelCase verbs (init, animate, updateCameraPosition, setupLights)
+- CSS classes: kebab-case (content-section, content-left, loading-screen)
+
+### Development Workflow
+
+1. Start with basic Three.js scene and ship model loading
+2. Add scroll container with placeholder sections
+3. Implement scroll progress calculation
+4. Define camera waypoints for each section
+5. Implement camera interpolation based on scroll
+6. Add content to sections
+7. Style content with CSS
+8. Add Intersection Observer for content animations
+9. Optimize performance
+10. Test on multiple devices and browsers
+
+### Testing Checklist
+
+- [ ] Model loads without errors
+- [ ] Loading progress displays correctly
+- [ ] Scroll animations are smooth (60fps)
+- [ ] Camera transitions work at all scroll positions
+- [ ] Content appears on correct side (left/right alternating)
+- [ ] Content fades in/out smoothly
+- [ ] Responsive design works on mobile
+- [ ] Works in Chrome, Firefox, Safari, Edge
+- [ ] No performance issues on lower-end devices
+- [ ] Accessibility features work correctly
+
+### Common Issues and Solutions
+
+#### "Jerky scroll animations"
+
+**Solution**: Use lerp for smooth interpolation, increase animation smoothness factor
+
+#### "Content blocks 3D scene interaction"
+
+**Solution**: Add `pointer-events: none` to scroll container, enable on content only
+
+#### "Model too large/small"
+
+**Solution**: Use auto-scaling function based on bounding box
+
+#### "Poor performance on mobile"
+
+**Solution**: Reduce shadow quality, lower pixel ratio, simplify model
+
+### Ocean Particle System
+
+The ocean is implemented as a particle system with animated sine waves and noise for realistic water movement:
+
+```javascript
+// Setup ocean with particles
+function setupOcean() {
+  // Create particle grid
+  const particleSpacing = 0.5; // Distance between particles
+  const positions = new Float32Array(particleCount * 3);
+  const initialPositions = new Float32Array(particleCount * 3);
+  const randomOffsets = new Float32Array(particleCount * 3);
+  
+  // Create geometry with custom attributes
+  oceanGeometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  oceanGeometry.setAttribute('initialPosition', new THREE.BufferAttribute(initialPositions, 3));
+  oceanGeometry.setAttribute('randomOffset', new THREE.BufferAttribute(randomOffsets, 3));
+  
+  // White particle material with transparency
+  const oceanMaterial = new THREE.PointsMaterial({
+    color: 0xffffff,
+    size: 0.3,
+    transparent: true,
+    opacity: 0.6,
+    blending: THREE.AdditiveBlending
+  });
+}
+
+// Calculate wave height at any position
+function calculateOceanWaveHeight(x, z, time, includeNoise = true) {
+  const wave1 = Math.sin(x * frequency + time * speed) * amplitude;
+  const wave2 = Math.sin(z * frequency + time * speed) * amplitude;
+  const wave3 = Math.sin((x + z) * frequency + time * speed) * amplitude;
+  
+  let noise = 0;
+  if (includeNoise) {
+    noise = Math.sin(x * noiseFreq + randomOffset) * noiseAmp;
+  }
+  
+  return wave1 + wave2 + wave3 + noise;
+}
+
+// Animate ocean with sine waves and noise
+function animateOcean() {
+  for (let i = 0; i < positions.length; i += 3) {
+    const waveHeight = calculateOceanWaveHeight(x, z, time, true);
+    positions[i + 1] = initialY + waveHeight;
+  }
+  oceanGeometry.attributes.position.needsUpdate = true;
+}
+
+// Ship floats synchronized with ocean waves
+function updateShipPosition() {
+  const shipX = shipModel.position.x;
+  const shipZ = shipModel.position.z;
+  
+  // Get wave height at ship's position (without noise for smooth motion)
+  const waveHeight = calculateOceanWaveHeight(shipX, shipZ, time, false);
+  shipModel.position.y = waveHeight;
+  
+  // Add realistic tilting based on wave slopes
+  shipModel.rotation.x = Math.sin(shipX * 0.5 + time * 0.5) * 0.03;
+  shipModel.rotation.z = Math.cos(shipZ * 0.5 + time * 0.5) * 0.03;
+}
+```
+
+**Wave Parameters:**
+- `waveSpeed`: Controls animation speed (default: 0.5)
+- `waveAmplitude`: Height of waves (default: 0.3)
+- `waveFrequency`: Wave density (default: 0.5)
+- `noiseAmplitude`: Randomness amount (default: 0.15)
+- `noiseFrequency`: Noise detail level (default: 1.5)
+
+**Performance Tips:**
+- Adjust `particleSpacing` to control particle density
+- Use `AdditiveBlending` for glowing water effect
+- Set `depthWrite: false` for better transparency
+- Store `initialPositions` to avoid recalculation
+
+### Future Enhancements
+
+- Add foam particles near ship wake
+- Implement particle effects (fog, smoke from ship)
+- Add ambient ocean sounds with volume based on scroll
+- Implement day/night cycle transition during scroll
+- Add interactive hotspots on ship for detailed info
+- Include ship wake trail particle system
+- Add WebXR support for VR/AR experiences
+- Add weather effects (rain, storm clouds)
+- Create admin panel for easy content editing
+
+## Quick Reference
+
+### Section Configuration Template
+
+```javascript
+{
+  progress: 0.5,           // Scroll position (0-1)
+  camera: { x: 5, y: 2, z: 8 },      // Camera position
+  target: { x: 0, y: 0, z: 0 },      // Look-at target
+  shipRotation: { x: 0, y: Math.PI, z: 0 },  // Ship rotation
+  content: 'section-id'    // Associated content section
+}
+```
+
+### Useful Three.js Values
+
+- FOV: 45-75 (lower = less distortion, higher = more dramatic)
+- Near plane: 0.1
+- Far plane: 100-1000
+- Fog density: 0.01-0.05
+- Shadow map size: 1024, 2048, or 4096
+
+This project focuses on creating an immersive, scroll-driven storytelling experience with smooth 3D animations and modern web design principles.
+
